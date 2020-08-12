@@ -174,8 +174,15 @@
                   (if (bool-boolean v)
                     (eval-under-env (cnd-e2 e) env)
                     (eval-under-env (cnd-e3 e) env))
-                (error "NUMEX cnd first argument must be boolean")))]
+                (error "NUMEX cnd first argument must be bool")))]
 
+        [(ifnzero? e)
+            (let ([v (eval-under-env (ifnzero-e1 e) env)])
+                (if (num? v)
+                  (if (equal? v (num 0))
+                    (eval-under-env (ifnzero-e3 e) env)
+                    (eval-under-env (ifnzero-e2 e) env))
+                (error "NUMEX ifnezro first argument must be num")))]
 
 
         [#t (error (format "bad NUMEX expression: ~v" e))]))
