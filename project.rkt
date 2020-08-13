@@ -19,15 +19,15 @@
 (struct iseq (e1 e2)  #:transparent)  ;; comparison
 (struct ifnzero (e1 e2 e3)  #:transparent)  ;; if not zero
 (struct ifleq (e1 e2 e3 e4)  #:transparent)  ;; if less than or equal
-(struct with (s e1 e2)  #:transparent) ;; a let expression where the value of e 1 is bound to s in e 2
+(struct with (s e1 e2)  #:transparent) ;; a let expression where the value of e1 is bound to s in e2
 ;(struct lam (s1 s2 e)  #:transparent)  ;; lambda
 (struct lam  (nameopt formal body) #:transparent) ;; a recursive(?) 1-argument function
 (struct apply (funexp actual)       #:transparent) ;; function application
 ;(struct myapply (funexp actual)  #:transparent) ;; function application
 (struct apair (e1 e2)  #:transparent) ;; pair
 
-(struct 1st (e1)   #:transparent) ;; the first part of the pair
-(struct 2nd (e1)   #:transparent) ;; the second part of the pair
+(struct 1st (e)   #:transparent) ;; the first part of the pair
+(struct 2nd (e)   #:transparent) ;; the second part of the pair
 (struct munit   ()      #:transparent) ;; unit value -- good for ending a list
 (struct ismunit (e)     #:transparent) ;; if e1 is unit then true else false
 ;; a closure is not in "source" programs; it is what functions evaluate to
@@ -159,7 +159,7 @@
 
         [(ismunit? e)
             (let ([v (eval-under-env (ismunit-e e) env)])
-;               (if (munit? v) (num 1) (num 0)))] this line is corrcect based on project definition but in test if fails!
+;               (if (munit? v) (num 1) (num 0)))] this line is corrcect based on project definition but in test it fails!
                (if (munit? v) (bool #t) (bool #f)))]
 
 
@@ -174,7 +174,7 @@
                   (if (bool-boolean v)
                     (eval-under-env (cnd-e2 e) env)
                     (eval-under-env (cnd-e3 e) env))
-                (error "NUMEX cnd first argument must be bool")))]
+                (error "NUMEX cnd first argument must be a bool")))]
 
         [(ifnzero? e)
             (let ([v (eval-under-env (ifnzero-e1 e) env)])
@@ -182,7 +182,24 @@
                   (if (equal? v (num 0))
                     (eval-under-env (ifnzero-e3 e) env)
                     (eval-under-env (ifnzero-e2 e) env))
-                (error "NUMEX ifnezro first argument must be num")))]
+                (error "NUMEX ifnezro 1st argument must be a num")))]
+
+        [(1st? e)
+            (let ([v (eval-under-env (1st-e e) env)])
+               (cond
+                 [(apair? v) (apair-e1 v)]
+                 [true (error (format "Numex first argument must be a pair"))]))]
+
+        [(2nd? e)
+            (let ([v (eval-under-env (2nd-e e) env)])
+               (cond
+                 [(apair? v) (apair-e2 v)]
+                 [true (error (format "Numex second argument must be a pair"))]))]
+
+        [(closure? e) e]
+
+        [(lam? e) (closure env e)]
+
 
 
         [#t (error (format "bad NUMEX expression: ~v" e))]))
@@ -192,10 +209,6 @@
   (eval-under-env e null))
         
 ;; Problem 3
-
-
-
-;(define (with* bs e2) "CHANGE")
 (define (with* bs e2)
   (if (equal? bs null)
       e2
@@ -210,7 +223,14 @@
 ;
 ;;; Problem 4
 ;
-(define numex-filter "CHANGE")
+(define numex-filter (lam "self" "lam_arg" (lam "filter" "list"
+    (cnd (ismunit (var "list"))
+        (munit)
+        (apair (apply (var "lam_arg") (1st (var "list"))) (apply (var "filter") (2nd(var "list"))))))))
+
+;(define numex-map (fun "final" "func" (fun "map" "list" (ifeq (ismunit (var "list")) (int 1) (munit)
+;                                                           (apair (call (var "func") (first (var "list"))) (call (var "map") (second(var "list"))))))))
+
 ;
 (define numex-all-gt
   (with "filter" numex-filter
