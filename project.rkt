@@ -223,8 +223,8 @@
 
         [(with? e)
              (let ([s (with-s e)]
-                   [v1 (eval-under-env (with-e1 e) env)])
-                    (eval-under-env (with-e2 e) (cons (cons s v1) env)))]
+                   [v (eval-under-env (with-e1 e) env)])
+                    (eval-under-env (with-e2 e) (cons (cons s v) env)))]
 
 
 
@@ -242,9 +242,15 @@
       (with (car (car bs)) (cdr (car bs)) (with* (cdr bs) e2))))
 
 
-(define (ifneq e1 e2 e3 e4) "CHANGE")
+(define (ifneq e1 e2 e3 e4)
+    (cnd (iseq e1 e2)
+         e4
+         e3))
 
-(define (ifmunit e1 e2 e3) "CHANGE")
+(define (ifmunit e1 e2 e3)
+    (cnd (ismunit e1)
+         e2
+         e3))
 
 
 ;
