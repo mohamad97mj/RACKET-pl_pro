@@ -20,9 +20,8 @@
 (struct ifnzero (e1 e2 e3)  #:transparent)  ;; if not zero
 (struct ifleq (e1 e2 e3 e4)  #:transparent)  ;; if less than or equal
 (struct with (s e1 e2)  #:transparent) ;; a let expression where the value of e1 is bound to s in e2
-;(struct lam (s1 s2 e)  #:transparent)  ;; lambda
-(struct lam  (nameopt formal body) #:transparent) ;; a recursive(?) 1-argument function
-(struct apply (funexp actual)       #:transparent) ;; function application
+(struct lam (s1 s2 e)  #:transparent)  ;; lambda
+(struct apply (e1 e2)       #:transparent) ;; function application
 ;(struct myapply (funexp actual)  #:transparent) ;; function application
 (struct apair (e1 e2)  #:transparent) ;; pair
 
@@ -188,21 +187,49 @@
             (let ([v (eval-under-env (1st-e e) env)])
                (cond
                  [(apair? v) (apair-e1 v)]
-                 [true (error (format "Numex first argument must be a pair"))]))]
+                 [true (error "Numex first argument must be a pair")]))]
 
         [(2nd? e)
             (let ([v (eval-under-env (2nd-e e) env)])
                (cond
                  [(apair? v) (apair-e2 v)]
-                 [true (error (format "Numex second argument must be a pair"))]))]
+                 [true (error "Numex second argument must be a pair")]))]
 
         [(closure? e) e]
 
         [(lam? e) (closure env e)]
 
+        [(apply? e)
+            (let ([clsr (eval-under-env (apply-e1 e) env)])
+                (cond
+                  [(closure? clsr) (let ([lamDef (closure-f clsr)])
+                                           (let ([arg (eval-under-env (apply-e2 e) env)])
+                                             (eval-under-env (lam-e lamDef)
+                                                (cons
+                                                  (cons (lam-s2 lamDef) arg)
+                                                  (cons
+                                                    (cons (lam-s1 lamDef) clsr)
+                                                    (closure-env clsr))))))]
+                  [#t (error "Numex apply first argument must be a closure")]))]
+
+        [(ifleq? e)
+            (let ([v1 (eval-under-env (ifleq-e1 e) env)]
+                  [v2 (eval-under-env (ifleq-e2 e) env)])
+                    (if (and (num? v1) (num? v2))
+                      (if (> (num-int v1) (num-int v2))
+                        (eval-under-env (ifleq-e4 e) env)
+                        (eval-under-env (ifleq-e3 e) env))
+                    (error "NUMEX ifleq 1st and 2nd argument must be nums")))]
+
+        [(with? e)
+             (let ([s (with-s e)]
+                   [v1 (eval-under-env (with-e1 e) env)])
+                    (eval-under-env (with-e2 e) (cons (cons s v1) env)))]
 
 
-        [#t (error (format "bad NUMEX expression: ~v" e))]))
+
+
+        [#t (error "bad NUMEX expression: ~v" e)]))
 
 ;; Do NOT change
 (define (eval-exp e)
@@ -228,10 +255,9 @@
         (munit)
         (apair (apply (var "lam_arg") (1st (var "list"))) (apply (var "filter") (2nd(var "list"))))))))
 
-;(define numex-map (fun "final" "func" (fun "map" "list" (ifeq (ismunit (var "list")) (int 1) (munit)
-;                                                           (apair (call (var "func") (first (var "list"))) (call (var "map") (second(var "list"))))))))
 
-;
-(define numex-all-gt
-  (with "filter" numex-filter
-        "CHANGE (notice filter is now in NUMEX scope)"))
+;(define numex-all-gt
+;  (with "filter" numex-filter
+;        "CHANGE (notice filter is now in NUMEX scope)"))
+
+(define numex-all-gt (lam null "i" (lam null "someList" (apply (apply numex-filter (lam "addition"  "x" (plus (var "x") (var "i")))) (var "someList")))))
