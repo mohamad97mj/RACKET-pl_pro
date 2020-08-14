@@ -226,8 +226,21 @@
                    [v (eval-under-env (with-e1 e) env)])
                     (eval-under-env (with-e2 e) (cons (cons s v) env)))]
 
+        [(letrec? e) "not implemented"]
+;             (let ([s1 (letrec-s1 e)]
+;                   [v1 (eval-under-env (letrec-e1 e) env)])
+;                    (let ([s2 (letrec-s2 e)]
+;                          [v2 (eval-under-env (letrec-e2 e) (cons (cons s1 v1) env))])
+;                           (let ([s3 (letrec-s3 e)]
+;                                 [v3 (eval-under-env (letrec-e3 e) (cons (cons s2 v2) env))])
+;                                  (eval-under-env (letrec-e4 e) (cons (cons s3 v3) env)))))
+        [(queue? e) "not implemented"]
 
+        [(enqueue? e) "not implemented"]
 
+        [(dequeue? e) "not implemented"]
+
+        [(extract? e) "not implemented"]
 
         [#t (error "bad NUMEX expression: ~v" e)]))
 
@@ -256,14 +269,33 @@
 ;
 ;;; Problem 4
 ;
+
+(define deleteNum0 (lam "deleteNum0" "lst"
+    (cnd (ismunit (var "lst"))
+         (munit)
+         (cnd (ismunit (1st (var "lst")))
+            (apair (1st (var "lst"))
+                   (apply (var "deleteNum0") (2nd (var "lst"))))
+            (cnd (iseq (1st (var "lst")) (num 0))
+                (apply (var "deleteNum0") (2nd (var "lst")))
+                (apair (1st (var "lst"))
+                       (apply (var "deleteNum0") (2nd (var "lst")))))))))
+
+
 (define numex-filter (lam "self" "lam_arg" (lam "filter" "list"
     (cnd (ismunit (var "list"))
         (munit)
-        (apair (apply (var "lam_arg") (1st (var "list"))) (apply (var "filter") (2nd(var "list"))))))))
+        (apply deleteNum0 (apair (apply (var "lam_arg") (1st (var "list"))) (apply (var "filter") (2nd(var "list")))))))))
 
 
-;(define numex-all-gt
-;  (with "filter" numex-filter
-;        "CHANGE (notice filter is now in NUMEX scope)"))
+(define deleteMunit (lam "deleteMunit" "lst"
+    (cnd (ismunit (var "lst"))
+         (munit)
+         (cnd (ismunit (1st (var "lst")))
+            (apply (var "deleteMunit") (2nd (var "lst")))
+            (apair (1st (var "lst"))
+                   (apply (var "deleteMunit") (2nd (var "lst"))))))))
 
-(define numex-all-gt (lam null "i" (lam null "someList" (apply (apply numex-filter (lam "addition"  "x" (plus (var "x") (var "i")))) (var "someList")))))
+
+(define numex-all-gt (lam null "i" (lam null "someList" (apply deleteMunit (apply (apply numex-filter (lam "addition" "x" (ifleq (var "x") (var "i") (munit) (var "x")))) (var "someList"))))))
+
